@@ -1,5 +1,8 @@
 package com.ccl.excel.pojo;
 
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -7,7 +10,9 @@ import java.util.Map;
  * 用户数据模型，用于Excel导入。
  * 包含一个用于存储导入失败原因的字段。
  */
+@TableName("t_user")
 public class User {
+    @TableId
     private String id;
     private String name;
     private Integer age;

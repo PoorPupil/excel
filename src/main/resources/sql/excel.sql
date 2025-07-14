@@ -8,3 +8,19 @@ CREATE TABLE `t_import_record`
     `start_time`    DATETIME     NOT NULL,
     `end_time`      DATETIME     DEFAULT NULL
 );
+
+create TABLE `t_user`
+(
+    `id`    varchar(64) Primary key ,
+    `name`  varchar(32) default '' comment '名称',
+    `age`   int         default 0 comment '年龄',
+    `email` varchar(32) default '' comment '邮箱'
+);
+
+create TABLE `t_product`
+(
+    `product_id`   varchar(64) Primary key,
+    `product_name` varchar(64)    not null default '' comment '产品名称',
+    `price`        DECIMAL(12, 2) not null default 0.00 comment '价格',
+    `stock`        int            not null default 0 comment '库存'
+);
