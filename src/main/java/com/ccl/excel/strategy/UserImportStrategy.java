@@ -1,10 +1,16 @@
 package com.ccl.excel.strategy;
 
 import com.ccl.excel.pojo.User;
+import com.ccl.excel.service.impl.UserServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
+import org.springframework.util.CollectionUtils;
 
+import javax.annotation.Resource;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 用户数据导入策略实现。
@@ -13,6 +19,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class UserImportStrategy implements BatchImportStrategy<User> {
+
+    @Resource
+    private UserServiceImpl userService;
 
     @Override
     public User convertRow(Map<String, String> rowData) {
@@ -57,33 +66,51 @@ public class UserImportStrategy implements BatchImportStrategy<User> {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public List<Map<String, String>> importBatch(List<User> users) {
-        List<Map<String, String>> failedUsers = new ArrayList<>();
-        log.info("--- UserImportStrategy: 开始导入批次用户数据 (大小: " + users.size() + ") ---");
-        for (User user : users) {
-            if (user.getImportError() != null && !user.getImportError().isEmpty()) {
-                // 如果在转换阶段已经有错误，直接标记为失败
-                failedUsers.add(t2Map(user));
-                log.error("UserImportStrategy: 导入失败 (转换错误): " + user);
-                continue;
-            }
 
-            // 模拟业务逻辑验证和持久化
-            if (user.getName() == null || user.getName().trim().isEmpty()) {
-                user.setImportError("姓名不能为空");
-                failedUsers.add(t2Map(user));
-                log.error("UserImportStrategy: 导入失败 (业务验证): " + user);
-            } else if (user.getAge() == null || user.getAge() < 0) {
-                user.setImportError("年龄必须为正数");
-                failedUsers.add(t2Map(user));
-                log.error("UserImportStrategy: 导入失败 (业务验证): " + user);
-            } else {
-                // 模拟成功保存到数据库
-                log.info("UserImportStrategy: 成功导入用户: " + user.getName());
+        try {
+            List<Map<String, String>> failedUsers = new ArrayList<>();
+
+            List<User> successUsers = new ArrayList<>();
+
+            log.info("--- UserImportStrategy: 开始导入批次用户数据 (大小: " + users.size() + ") ---");
+            for (User user : users) {
+                if (user.getImportError() != null && !user.getImportError().isEmpty()) {
+                    // 如果在转换阶段已经有错误，直接标记为失败
+                    failedUsers.add(t2Map(user));
+                    log.error("UserImportStrategy: 导入失败 (转换错误): " + user);
+                    continue;
+                }
+
+                // 模拟业务逻辑验证和持久化
+                if (user.getName() == null || user.getName().trim().isEmpty()) {
+                    user.setImportError("姓名不能为空");
+                    failedUsers.add(t2Map(user));
+                    log.error("UserImportStrategy: 导入失败 (业务验证): " + user);
+                } else if (user.getAge() == null || user.getAge() < 0) {
+                    user.setImportError("年龄必须为正数");
+                    failedUsers.add(t2Map(user));
+                    log.error("UserImportStrategy: 导入失败 (业务验证): " + user);
+                } else {
+                    // 模拟成功保存到数据库
+                    successUsers.add(user);
+                }
             }
+            log.info("--- UserImportStrategy: 批次用户数据导入完成，失败数: " + failedUsers.size() + " ---");
+
+            // 上面校验检查没有问题之后就只需要对这批次的数据进行导入即可
+            if (!CollectionUtils.isEmpty(successUsers))
+                userService.saveBatch(successUsers, successUsers.size());
+
+            return failedUsers;
+        } catch (Exception e) {
+            log.error("UserImportStrategy: 批次用户数据导入异常: " + e.getMessage());
+            // 手动回滚事务
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+
+            return users.stream().map(this::t2Map).collect(Collectors.toList());
         }
-        log.info("--- UserImportStrategy: 批次用户数据导入完成，失败数: " + failedUsers.size() + " ---");
-        return failedUsers;
     }
 
     @Override

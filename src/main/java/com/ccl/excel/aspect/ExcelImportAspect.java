@@ -2,8 +2,9 @@ package com.ccl.excel.aspect;
 
 import com.ccl.excel.annotion.ExcelImport;
 import com.ccl.excel.constant.ImportStatus;
-import com.ccl.excel.mapper.ImportRecordRepository;
+//import com.ccl.excel.mapper.ImportRecordRepository;
 import com.ccl.excel.pojo.ImportRecord;
+import com.ccl.excel.service.impl.ImportRecordServiceImpl;
 import com.ccl.excel.strategy.BatchImportStrategy;
 import com.ccl.excel.task.ExcelImportBatchTask;
 import com.ccl.excel.utils.ExcelReadListener;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
@@ -42,9 +44,9 @@ import java.util.stream.Collectors;
 public class ExcelImportAspect {
 
     private final Executor excelImportTaskExecutor;
-    private final ImportRecordRepository importRecordRepository;
-    private final TransactionTemplate transactionTemplate;
     private final ApplicationContext applicationContext; // 注入ApplicationContext
+    @Resource
+    private ImportRecordServiceImpl importRecordServiceImpl;
 
     // 线程安全的列表，用于收集所有批次导入中产生的失败记录
     // 注意：这个列表是针对整个应用生命周期的，如果并发导入任务很多，
@@ -52,13 +54,10 @@ public class ExcelImportAspect {
     // 例如通过ConcurrentHashMap<String, List<Map<String, String>>>来存储，键为importJobId
     private final ConcurrentHashMap<String, List<Map<String, String>>> allFailedRecordsMap = new ConcurrentHashMap<>();
 
-    public ExcelImportAspect(@Qualifier("excelImportTaskExecutor") Executor excelImportTaskExecutor,
-                             ImportRecordRepository importRecordRepository,
-                             TransactionTemplate transactionTemplate,
+    public ExcelImportAspect(
+            @Qualifier("excelImportTaskExecutor") Executor excelImportTaskExecutor,
                              ApplicationContext applicationContext) {
         this.excelImportTaskExecutor = excelImportTaskExecutor;
-        this.importRecordRepository = importRecordRepository;
-        this.transactionTemplate = transactionTemplate;
         this.applicationContext = applicationContext;
     }
 
@@ -85,7 +84,6 @@ public class ExcelImportAspect {
         int batchSize = excelImportAnnotation.batchSize();
         long timeoutSeconds = excelImportAnnotation.timeoutSeconds();
         Class<? extends BatchImportStrategy<?>> strategyClass = excelImportAnnotation.strategy();
-//        Class<?> targetClass = excelImportAnnotation.targetClass();
 
         // 从Spring容器中获取导入策略的实例
         BatchImportStrategy<Object> importStrategy = (BatchImportStrategy<Object>) applicationContext.getBean(strategyClass);
@@ -107,7 +105,7 @@ public class ExcelImportAspect {
         ImportRecord importRecord = new ImportRecord();
         importRecord.setFileName(excelFile.getOriginalFilename());
         importRecord.setStatus(ImportStatus.STARTED);
-        importRecord = importRecordRepository.save(importRecord);
+        importRecordServiceImpl.save(importRecord);
 
         String importJobId = importRecord.getId();
         log.info("导入任务 [" + importJobId + "] 已开始，文件: " + excelFile.getOriginalFilename());
@@ -131,7 +129,7 @@ public class ExcelImportAspect {
 
                 // 为每个批次数据创建一个Callable任务
                 ExcelImportBatchTask<Object> task = new ExcelImportBatchTask<>(
-                        convertedBatchData, importJobId, importStrategy, transactionTemplate);
+                        convertedBatchData, importJobId, importStrategy);
 
                 CompletableFuture<List<Map<String, String>>> future = CompletableFuture.supplyAsync(() -> {
                     try {
@@ -157,7 +155,7 @@ public class ExcelImportAspect {
         } catch (Exception e) {
             importRecord.setStatus(ImportStatus.FAILED);
             importRecord.setEndTime(LocalDateTime.now());
-            importRecordRepository.update(importRecord);
+            importRecordServiceImpl.updateById(importRecord);
             log.error("Excel文件读取或解析失败: " + e.getMessage());
             throw new RuntimeException("Excel文件读取或解析失败", e);
         }
@@ -192,7 +190,7 @@ public class ExcelImportAspect {
                     }
                 }
             }
-            importRecordRepository.update(updateRecord);
+            importRecordServiceImpl.updateById(updateRecord);
             // 任务完成后，移除该任务的失败记录列表
             allFailedRecordsMap.remove(importJobId);
         });
@@ -202,13 +200,13 @@ public class ExcelImportAspect {
             return "Excel导入任务 [" + importJobId + "] 已完成。";
         } catch (TimeoutException e) {
             importRecord.setStatus(ImportStatus.IN_PROGRESS);
-            importRecordRepository.update(importRecord);
+            importRecordServiceImpl.updateById(importRecord);
             log.info("导入任务 [" + importJobId + "] 主线程超时，将在后台继续处理。");
             return "Excel导入任务已提交，正在后台处理中，任务ID: " + importJobId + "。请稍后查询结果。";
         } catch (Exception e) {
             importRecord.setStatus(ImportStatus.FAILED);
             importRecord.setEndTime(LocalDateTime.now());
-            importRecordRepository.update(importRecord);
+            importRecordServiceImpl.updateById(importRecord);
             log.error("导入任务 [" + importJobId + "] 执行过程中发生异常: " + e.getMessage());
             throw new RuntimeException("Excel导入任务执行失败", e);
         }

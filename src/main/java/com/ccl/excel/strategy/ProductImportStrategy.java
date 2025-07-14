@@ -1,11 +1,17 @@
 package com.ccl.excel.strategy;
 
 import com.ccl.excel.pojo.Product;
+import com.ccl.excel.service.impl.ProductServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
+import org.springframework.util.CollectionUtils;
 
+import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 产品数据导入策略实现。
@@ -14,6 +20,9 @@ import java.util.*;
 @Slf4j
 @Component
 public class ProductImportStrategy implements BatchImportStrategy<Product> {
+
+    @Resource
+    private ProductServiceImpl productService;
 
     @Override
     public Product convertRow(Map<String, String> rowData) {
@@ -66,32 +75,52 @@ public class ProductImportStrategy implements BatchImportStrategy<Product> {
 
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public List<Map<String, String>> importBatch(List<Product> products) {
-        List<Map<String, String>> failedProducts = new ArrayList<>();
-        log.info("--- ProductImportStrategy: 开始导入批次产品数据 (大小: " + products.size() + ") ---");
-        for (Product product : products) {
-            if (product.getImportError() != null && !product.getImportError().isEmpty()) {
-                failedProducts.add(t2Map(product));
-                log.error("ProductImportStrategy: 导入失败 (转换错误): " + product);
-                continue;
+
+        try {
+            List<Map<String, String>> failedProducts = new ArrayList<>();
+            log.info("--- ProductImportStrategy: 开始导入批次产品数据 (大小: " + products.size() + ") ---");
+
+            List<Product> successProducts = new ArrayList<>();
+
+            for (Product product : products) {
+
+                if (product.getImportError() != null && !product.getImportError().isEmpty()) {
+                    failedProducts.add(t2Map(product));
+                    log.error("ProductImportStrategy: 导入失败 (转换错误): " + product);
+                    continue;
+                }
+
+                // 模拟业务逻辑验证和持久化
+                if (product.getPrice() == null || product.getPrice().compareTo(BigDecimal.ZERO) < 0) {
+                    product.setImportError("价格必须为正数");
+                    failedProducts.add(t2Map(product));
+                    log.error("ProductImportStrategy: 导入失败 (业务验证): " + product);
+                } else if (product.getStock() == null || product.getStock() < 0) {
+                    product.setImportError("库存不能为负数");
+                    failedProducts.add(t2Map(product));
+                    log.error("ProductImportStrategy: 导入失败 (业务验证): " + product);
+                } else {
+                    // 模拟成功保存到数据库
+                    log.info("ProductImportStrategy: 成功导入产品: " + product.getProductName());
+                }
+
+                successProducts.add(product);
+            }
+            log.info("--- ProductImportStrategy: 批次产品数据导入完成，失败数: " + failedProducts.size() + " ---");
+
+            if (!CollectionUtils.isEmpty(successProducts)){
+                productService.saveBatch(successProducts, successProducts.size());
             }
 
-            // 模拟业务逻辑验证和持久化
-            if (product.getPrice() == null || product.getPrice().compareTo(BigDecimal.ZERO) < 0) {
-                product.setImportError("价格必须为正数");
-                failedProducts.add(t2Map(product));
-                log.error("ProductImportStrategy: 导入失败 (业务验证): " + product);
-            } else if (product.getStock() == null || product.getStock() < 0) {
-                product.setImportError("库存不能为负数");
-                failedProducts.add(t2Map(product));
-                log.error("ProductImportStrategy: 导入失败 (业务验证): " + product);
-            } else {
-                // 模拟成功保存到数据库
-                log.info("ProductImportStrategy: 成功导入产品: " + product.getProductName());
-            }
+            return failedProducts;
+
+        }catch (Exception e){
+            log.error("ProductImportStrategy: 批次产品数据导入异常: " + e.getMessage());
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            return products.stream().map(this::t2Map).collect(Collectors.toList());
         }
-        log.info("--- ProductImportStrategy: 批次产品数据导入完成，失败数: " + failedProducts.size() + " ---");
-        return failedProducts;
     }
 
     @Override

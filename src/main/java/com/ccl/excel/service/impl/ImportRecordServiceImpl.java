@@ -1,6 +1,10 @@
-package com.ccl.excel.service;
+package com.ccl.excel.service.impl;
 
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ccl.excel.annotion.ExcelImport;
+import com.ccl.excel.mapper.ImportRecordMapper;
+import com.ccl.excel.mapper.UserMapper;
+import com.ccl.excel.pojo.ImportRecord;
 import com.ccl.excel.pojo.Product;
 import com.ccl.excel.pojo.User;
 import com.ccl.excel.strategy.ProductImportStrategy;
@@ -15,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @Slf4j
 @Service
-public class ImportService {
+public class ImportRecordServiceImpl extends ServiceImpl<ImportRecordMapper, ImportRecord> {
 
     /**
      * 导入用户数据的方法。
