@@ -3,10 +3,14 @@ package com.ccl.excel.strategy;
 import com.ccl.excel.pojo.Product;
 import com.ccl.excel.service.impl.ProductServiceImpl;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.servlet.LocaleResolver;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
@@ -23,14 +27,23 @@ public class ProductImportStrategy implements BatchImportStrategy<Product> {
 
     @Resource
     private ProductServiceImpl productService;
+    @Autowired
+    private MessageSource messageSource;
 
     @Override
     public Product convertRow(Map<String, String> rowData) {
+        // 多语言
+        Locale locale = LocaleContextHolder.getLocale();
+
         Product product = new Product();
-        String productId = rowData.get("产品ID");
-        String productName = rowData.get("产品名称");
-        String priceStr = rowData.get("价格");
-        String stockStr = rowData.get("库存");
+//        String productId = rowData.get("产品ID");
+        String productId = rowData.get(messageSource.getMessage("product.id",null,  locale));
+//        String productName = rowData.get("产品名称");
+        String productName = rowData.get(messageSource.getMessage("product.name",null,  locale));
+//        String priceStr = rowData.get("价格");
+        String priceStr = rowData.get(messageSource.getMessage("product.price",null,  locale));
+//        String stockStr = rowData.get("库存");
+        String stockStr = rowData.get(messageSource.getMessage("product.stock",null,  locale));
 
         StringBuilder errorBuilder = new StringBuilder();
 
