@@ -36,21 +36,13 @@ public class UserImportStrategy implements BatchImportStrategy<User> {
         Locale locale = LocaleContextHolder.getLocale();
 
         User user = new User();
-//        String name = rowData.get("姓名");
         String name = rowData.get(messageSource.getMessage("user.name",null,  locale));
-//        String id = rowData.get("ID");
-//        String id = rowData.get(messageSource.getMessage("user.id",null,  locale));
-//        String ageStr = rowData.get("年龄");
         String ageStr = rowData.get(messageSource.getMessage("user.age",null,  locale));
-//        String email = rowData.get("邮箱");
         String email = rowData.get(messageSource.getMessage("user.email",null,  locale));
 
         StringBuilder errorBuilder = new StringBuilder();
 
         // 模拟数据转换和初步验证
-//        if (id == null || id.trim().isEmpty()) {
-//            errorBuilder.append("ID不能为空; ");
-//        }
         if (name == null || name.trim().isEmpty()) {
             errorBuilder.append("姓名不能为空; ");
         }
