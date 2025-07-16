@@ -6,7 +6,7 @@ create table `t_import_record`
     `start_time`    datetime     NOT NULL,
     `end_time`      datetime     DEFAULT NULL,
     `status`        tinyint      NOT NULL,
-    `failed_report` varchar(255) DEFAULT NULL
+    `failed_report_path` varchar(255) DEFAULT NULL
 );
 
 

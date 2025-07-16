@@ -20,7 +20,7 @@ public class UserController {
 
     @PostMapping("/import")
     @ResponseBody
-    @ExcelImport(batchSize = 200, timeoutSeconds = 1, strategy = UserImportStrategy.class)
+    @ExcelImport(batchSize = 200, timeoutSeconds = 10000, strategy = UserImportStrategy.class)
     public String importUser(@RequestParam("file") MultipartFile file) {
         log.info("Service层: importUsers 方法被调用，文件名为: " + file.getOriginalFilename());
         return "导入请求已接收，正在处理中...";

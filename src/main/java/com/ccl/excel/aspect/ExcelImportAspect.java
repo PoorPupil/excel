@@ -110,9 +110,6 @@ public class ExcelImportAspect {
         String importJobId = importRecord.getId();
         log.info("导入任务 [" + importJobId + "] 已开始，文件: " + excelFile.getOriginalFilename());
 
-        // 初始化当前任务的失败记录列表
-        allFailedRecordsMap.put(importJobId, new CopyOnWriteArrayList<>());
-
         // 用于收集所有批处理任务的Future
         List<CompletableFuture<List<Map<String, String>>>> futures = new ArrayList<>();
 
@@ -133,7 +130,6 @@ public class ExcelImportAspect {
 
                 CompletableFuture<List<Map<String, String>>> future = CompletableFuture.supplyAsync(() -> {
                     try {
-                        Thread.sleep(5000);
                         return task.call();
                     } catch (Exception e) {
                         log.error("批处理任务执行异常: " + e.getMessage());
@@ -143,11 +139,6 @@ public class ExcelImportAspect {
                     }
                 }, excelImportTaskExecutor);
 
-                future.thenAccept(batchFailed -> {
-                    if (batchFailed != null && !batchFailed.isEmpty()) {
-                        allFailedRecordsMap.get(importJobId).addAll(batchFailed);
-                    }
-                });
                 futures.add(future);
             });
 
@@ -167,7 +158,18 @@ public class ExcelImportAspect {
             ImportRecord updateRecord = new ImportRecord();
             updateRecord.setId(importJobId);
             updateRecord.setEndTime(LocalDateTime.now());
-            List<Map<String, String>> currentFailedRecords = allFailedRecordsMap.getOrDefault(importJobId, new ArrayList<>(0));
+            // 汇总所有失败记录
+            List<Map<String, String>> currentFailedRecords = futures.stream()
+                    .map(future -> {
+                        try {
+                            return future.get(); // 获取每个子任务返回的失败记录
+                        } catch (Exception e) {
+                            return new ArrayList<Map<String, String>>(); // 忽略异常
+                        }
+                    })
+                    .flatMap(List::stream)
+                    .collect(Collectors.toList());
+
 
             if (ex != null) {
                 updateRecord.setStatus(ImportStatus.FAILED.getValue());
