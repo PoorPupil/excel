@@ -133,6 +133,7 @@ public class ExcelImportAspect {
 
                 CompletableFuture<List<Map<String, String>>> future = CompletableFuture.supplyAsync(() -> {
                     try {
+                        Thread.sleep(5000);
                         return task.call();
                     } catch (Exception e) {
                         log.error("批处理任务执行异常: " + e.getMessage());
