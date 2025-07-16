@@ -30,8 +30,8 @@ public @interface ExcelImport {
      */
     Class<? extends BatchImportStrategy<?>> strategy();
 
-    /**
-     * @return 指定Excel行数据将要转换成的目标POJO类。
-     */
-    Class<?> targetClass();
+//    /**
+//     * @return 指定Excel行数据将要转换成的目标POJO类。
+//     */
+//    Class<?> targetClass();
 }

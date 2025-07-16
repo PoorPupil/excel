@@ -3,6 +3,9 @@ package com.ccl.excel.strategy;
 import com.ccl.excel.pojo.User;
 import com.ccl.excel.service.impl.UserServiceImpl;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
@@ -23,20 +26,31 @@ public class UserImportStrategy implements BatchImportStrategy<User> {
     @Resource
     private UserServiceImpl userService;
 
+    @Autowired
+    private MessageSource messageSource;
+
     @Override
     public User convertRow(Map<String, String> rowData) {
+
+        // 多语言
+        Locale locale = LocaleContextHolder.getLocale();
+
         User user = new User();
-        String name = rowData.get("姓名");
-        String id = rowData.get("ID");
-        String ageStr = rowData.get("年龄");
-        String email = rowData.get("邮箱");
+//        String name = rowData.get("姓名");
+        String name = rowData.get(messageSource.getMessage("user.name",null,  locale));
+//        String id = rowData.get("ID");
+//        String id = rowData.get(messageSource.getMessage("user.id",null,  locale));
+//        String ageStr = rowData.get("年龄");
+        String ageStr = rowData.get(messageSource.getMessage("user.age",null,  locale));
+//        String email = rowData.get("邮箱");
+        String email = rowData.get(messageSource.getMessage("user.email",null,  locale));
 
         StringBuilder errorBuilder = new StringBuilder();
 
         // 模拟数据转换和初步验证
-        if (id == null || id.trim().isEmpty()) {
-            errorBuilder.append("ID不能为空; ");
-        }
+//        if (id == null || id.trim().isEmpty()) {
+//            errorBuilder.append("ID不能为空; ");
+//        }
         if (name == null || name.trim().isEmpty()) {
             errorBuilder.append("姓名不能为空; ");
         }
@@ -54,7 +68,7 @@ public class UserImportStrategy implements BatchImportStrategy<User> {
             errorBuilder.append("邮箱格式不正确或为空; ");
         }
 
-        user.setId(id);
+        user.setId(UUID.randomUUID().toString());
         user.setName(name);
         user.setAge(age);
         user.setEmail(email);
@@ -121,7 +135,7 @@ public class UserImportStrategy implements BatchImportStrategy<User> {
     @Override
     public Map<String, String> t2Map(User item) {
         Map<String, String> map = new LinkedHashMap<>();
-        map.put("ID", item.getId());
+//        map.put("ID", item.getId());
         map.put("姓名", item.getName());
         map.put("年龄", item.getAge() != null ? item.getAge().toString() : "");
         map.put("邮箱", item.getEmail());

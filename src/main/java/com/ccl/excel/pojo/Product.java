@@ -1,5 +1,6 @@
 package com.ccl.excel.pojo;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -20,6 +21,8 @@ public class Product {
     private BigDecimal price;
 
     private Integer stock;
+
+    @TableField(exist = false)
     private String importError; // 导入失败原因
 
     // Constructors, Getters, Setters

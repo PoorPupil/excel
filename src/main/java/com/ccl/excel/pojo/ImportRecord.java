@@ -1,5 +1,7 @@
 package com.ccl.excel.pojo;
 
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.ccl.excel.constant.ImportStatus;
 
 import java.time.LocalDateTime;
@@ -8,18 +10,21 @@ import java.util.UUID;
 /**
  * 导入记录实体类，模拟数据库中的一条记录，用于追踪Excel导入任务的状态。
  */
+@TableName("t_import_record")
 public class ImportRecord {
+
+    @TableId
     private String id; // 导入任务的唯一标识符
     private String fileName; // 导入的Excel文件名
     private LocalDateTime startTime; // 导入开始时间
     private LocalDateTime endTime; // 导入结束时间
-    private ImportStatus status; // 导入任务的状态
+    private Integer status; // 导入任务的状态
     private String failedReportPath; // 失败报告Excel文件的路径
 
     public ImportRecord() {
         this.id = UUID.randomUUID().toString(); // 自动生成ID
         this.startTime = LocalDateTime.now();
-        this.status = ImportStatus.STARTED;
+        this.status = ImportStatus.STARTED.getValue();
     }
 
     // Getters and Setters
@@ -55,11 +60,11 @@ public class ImportRecord {
         this.endTime = endTime;
     }
 
-    public ImportStatus getStatus() {
+    public Integer getStatus() {
         return status;
     }
 
-    public void setStatus(ImportStatus status) {
+    public void setStatus(Integer status) {
         this.status = status;
     }
 

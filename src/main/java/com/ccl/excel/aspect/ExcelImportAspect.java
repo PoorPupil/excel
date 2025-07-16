@@ -104,7 +104,7 @@ public class ExcelImportAspect {
         // 1. 记录Excel操作记录的开始导入数据
         ImportRecord importRecord = new ImportRecord();
         importRecord.setFileName(excelFile.getOriginalFilename());
-        importRecord.setStatus(ImportStatus.STARTED);
+        importRecord.setStatus(ImportStatus.STARTED.getValue());
         importRecordServiceImpl.save(importRecord);
 
         String importJobId = importRecord.getId();
@@ -153,7 +153,7 @@ public class ExcelImportAspect {
             listener.process(excelFile.getInputStream(), sst);
 
         } catch (Exception e) {
-            importRecord.setStatus(ImportStatus.FAILED);
+            importRecord.setStatus(ImportStatus.FAILED.getValue());
             importRecord.setEndTime(LocalDateTime.now());
             importRecordServiceImpl.updateById(importRecord);
             log.error("Excel文件读取或解析失败: " + e.getMessage());
@@ -169,14 +169,14 @@ public class ExcelImportAspect {
             List<Map<String, String>> currentFailedRecords = allFailedRecordsMap.getOrDefault(importJobId, new ArrayList<>(0));
 
             if (ex != null) {
-                updateRecord.setStatus(ImportStatus.FAILED);
+                updateRecord.setStatus(ImportStatus.FAILED.getValue());
                 log.error("导入任务 [" + importJobId + "] 存在子任务异常: " + ex.getMessage());
             } else {
                 if (currentFailedRecords.isEmpty()) {
-                    updateRecord.setStatus(ImportStatus.COMPLETED_SUCCESS);
+                    updateRecord.setStatus(ImportStatus.COMPLETED_SUCCESS.getValue());
                     log.info("导入任务 [" + importJobId + "] 已全部成功完成。");
                 } else {
-                    updateRecord.setStatus(ImportStatus.COMPLETED_WITH_ERRORS);
+                    updateRecord.setStatus(ImportStatus.COMPLETED_WITH_ERRORS.getValue());
                     log.info("导入任务 [" + importJobId + "] 已完成，但存在失败记录。");
 
                     String failedReportFileName = "failed_import_" + importJobId + ".xlsx";
@@ -199,12 +199,12 @@ public class ExcelImportAspect {
             allOf.get(timeoutSeconds, TimeUnit.SECONDS);
             return "Excel导入任务 [" + importJobId + "] 已完成。";
         } catch (TimeoutException e) {
-            importRecord.setStatus(ImportStatus.IN_PROGRESS);
+            importRecord.setStatus(ImportStatus.IN_PROGRESS.getValue());
             importRecordServiceImpl.updateById(importRecord);
             log.info("导入任务 [" + importJobId + "] 主线程超时，将在后台继续处理。");
             return "Excel导入任务已提交，正在后台处理中，任务ID: " + importJobId + "。请稍后查询结果。";
         } catch (Exception e) {
-            importRecord.setStatus(ImportStatus.FAILED);
+            importRecord.setStatus(ImportStatus.FAILED.getValue());
             importRecord.setEndTime(LocalDateTime.now());
             importRecordServiceImpl.updateById(importRecord);
             log.error("导入任务 [" + importJobId + "] 执行过程中发生异常: " + e.getMessage());

@@ -23,6 +23,7 @@ public class ExcelReportGenerator {
      * @throws IOException 如果写入文件失败
      */
     public static void generateErrorExcel(List<Map<String, String>> failedRecords, String filePath, List<String> headers) throws IOException {
+
         if (failedRecords == null || failedRecords.isEmpty()) {
             log.info("没有失败记录，无需生成错误报告。");
             return;

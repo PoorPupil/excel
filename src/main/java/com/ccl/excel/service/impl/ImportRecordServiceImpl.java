@@ -29,7 +29,7 @@ public class ImportRecordServiceImpl extends ServiceImpl<ImportRecordMapper, Imp
      * @return 导入结果信息
      */
     @ExcelImport(batchSize = 200, timeoutSeconds = 10,
-            strategy = UserImportStrategy.class, targetClass = User.class)
+            strategy = UserImportStrategy.class)
     public String importUsers(MultipartFile file) {
         log.info("Service层: importUsers 方法被调用，文件名为: " + file.getOriginalFilename());
         return "导入请求已接收，正在处理中...";
@@ -42,7 +42,7 @@ public class ImportRecordServiceImpl extends ServiceImpl<ImportRecordMapper, Imp
      * @return 导入结果信息
      */
     @ExcelImport(batchSize = 500, timeoutSeconds = 15,
-            strategy = ProductImportStrategy.class, targetClass = Product.class)
+            strategy = ProductImportStrategy.class)
     public String importProducts(MultipartFile file) {
         log.info("Service层: importProducts 方法被调用，文件名为: " + file.getOriginalFilename());
         return "导入请求已接收，正在处理中...";
