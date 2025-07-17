@@ -9,17 +9,21 @@ create table `t_import_record`
     `failed_report_path` varchar(255) DEFAULT NULL
 );
 
-
-CREATE TABLE `t_import_record`
+CREATE TABLE `t_export_task_log`
 (
-    `id`            BIGINT PRIMARY KEY AUTO_INCREMENT,
-    `task_name`     VARCHAR(100) NOT NULL comment '任务名称',
-    `original_file` VARCHAR(255) NOT NULL comment '原始文件路径',
-    `error_file`    VARCHAR(255) DEFAULT NULL comment '错误文件路径',
-    `status`        tinyint      NOT NULL comment '任务状态, 0:处理中, 1:完成, 2:超时, 3:失败',
-    `start_time`    DATETIME     NOT NULL,
-    `end_time`      DATETIME     DEFAULT NULL
-);
+    `id`               VARCHAR(36)  NOT NULL COMMENT '导出任务的唯一标识符',
+    `export_name`      VARCHAR(255) NOT NULL COMMENT '导出任务的名称',
+    `start_time`       DATETIME     NOT NULL COMMENT '导出开始时间',
+    `end_time`         DATETIME NULL COMMENT '导出结束时间',
+    `status`           INT          NOT NULL COMMENT '导出任务的状态 (0:PENDING, 1:IN_PROGRESS, 2:COMPLETED, 3:FAILED, 4:TIMED_OUT)',
+    `total_records`    BIGINT       NOT NULL DEFAULT 0 COMMENT '总记录数',
+    `exported_records` BIGINT       NOT NULL DEFAULT 0 COMMENT '已导出记录数',
+    `file_path`        VARCHAR(500) NULL COMMENT '导出 Excel 文件的路径',
+    `error_message`    TEXT NULL COMMENT '错误信息',
+    `request_params`   TEXT NULL COMMENT '原始请求参数的 JSON 字符串',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Excel 导出任务日志表';
+
 
 create TABLE `t_user`
 (
