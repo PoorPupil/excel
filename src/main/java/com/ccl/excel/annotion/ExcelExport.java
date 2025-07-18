@@ -32,4 +32,9 @@ public @interface ExcelExport {
      * @return 指定用于处理导出逻辑的 BatchExportStrategy 实现类的 Spring Bean 名称。
      */
     String strategyBeanName();
+
+    /**
+     * @return sheet 的名称，用于 Excel 文件中。
+     */
+    String sheetName() default "Sheet1";
 }

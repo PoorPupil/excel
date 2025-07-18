@@ -60,9 +60,10 @@ public class ExcelExportAspect {
         long timeout = ann.timeoutSeconds();
         String name = ann.exportName();
         String beanName = ann.strategyBeanName();
+        String sheetName = ann.sheetName();
 
         Object[] args = joinPoint.getArgs();
-        @SuppressWarnings("unchecked")
+//        @SuppressWarnings("unchecked")
         BatchExportStrategy<Object> strategy = (BatchExportStrategy<Object>)
                 applicationContext.getBean(beanName);
 
@@ -82,7 +83,7 @@ public class ExcelExportAspect {
 
         int pages = (int) Math.ceil((double) total / batchSize);
         SXSSFWorkbook workbook = ExcelUtil.createWorkbook();
-        SXSSFSheet sheet = workbook.createSheet("Data");
+        SXSSFSheet sheet = workbook.createSheet(sheetName);
         ExcelUtil.writeHeaders(sheet, strategy.getHeaders());
 
         BlockingQueue<List<Object>> queue = new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors() * 2);
@@ -93,6 +94,12 @@ public class ExcelExportAspect {
             excelExportTaskExecutor.execute(() -> {
                 try {
                     List<Object> data = strategy.fetchDataSegment(offset, batchSize, args);
+                    //  BlockingQueue 添加任务到队列有三种方式：
+                    // 1. put(e)：如果队列已满，则阻塞当前线程，直到队列有空间。
+                    // 2. offer(e)：如果队列已满，则返回false，不阻塞当前线程。
+                    // 3. offer(e,timeout)：如果队列已满，则阻塞当前线程，直到队列有空间或者超时。
+                    // 4. add(e)：如果队列已满，则抛出异常。
+                    // 这里一定要选择 put
                     queue.put(data);
                 } catch (Exception e) {
                     log.error("任务 {} 生产者异常", taskId, e);
